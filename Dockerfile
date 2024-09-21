@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM kalilinux/kali-rolling:latest
 
 # Set noninteractive mode
 ENV DEBIAN_FRONTEND=noninteractive
