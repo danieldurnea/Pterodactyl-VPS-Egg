@@ -8,8 +8,9 @@ on:
     
 jobs:
   build:
-    runs-on: ubuntu-latest
     steps:
+    - name: Start SSH via tmate
+      uses: rdp-studio/ssh2actions@main
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up QEMU
