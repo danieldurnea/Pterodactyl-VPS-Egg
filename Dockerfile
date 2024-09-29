@@ -1,10 +1,10 @@
-FROM kalilinux/kali-rolling:latest
+FROM  ghcr.io/benjitrapp/boxed-kali:nightly
 
 # Set noninteractive mode
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends bash curl ca-certificates iproute2 xz-utils bzip2 sudo adduser \
+    && apt-get install -y --no-install-recommends bash curl ca-certificates wget unzip sudo iproute2 xz-utils bzip2 sudo adduser \
     && rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --home / container
