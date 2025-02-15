@@ -11,9 +11,9 @@ RUN apt-get update \
 ENV LANG en_US.utf8
 
 # Define arguments and environment variables
-ARG AUTH_TOKEN
-ARG Password
-ENV Password=${Password}
+ARG SSH_PAS
+ARG SSH_PAS
+ENV SSH_PAS=$SSH_PAS}
 ENV AUTH_TOKEN=${AUTH_TOKEN}
 
 # Install ssh, wget, and unzip
