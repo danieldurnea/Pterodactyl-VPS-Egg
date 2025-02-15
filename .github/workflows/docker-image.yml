@@ -1,11 +1,41 @@
-name: 'Run SSH4Me'
-on:
-  workflow_dispatch:
-
+name: CompareCache
+ 
+on: push
+ 
 jobs:
-  build-and-run:
-    runs-on: ubuntu-latest
+  build:
+    name: 'Build: ${{ matrix.OS }}'
+    runs-on: ${{ matrix.OS }}
+    strategy:
+      matrix:
+        OS: [ubuntu-22.04, depot-ubuntu-22.04]
+        NODE_VERSION: [20]
     steps:
+      - name: Disable git crlf
+        run: git config --global core.autocrlf false
+ 
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: vercel/next.js
+          ref: v14.2.12
+          fetch-depth: 0
+ 
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v3
+ 
+      - name: Setup node@${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.NODE_VERSION }}
+          cache: 'pnpm'
+ 
+      - name: Install dependencies
+        run: pnpm install
+ 
+      - name: Build Packages
+        run: pnpm run build
+ steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
