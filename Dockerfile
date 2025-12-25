@@ -1,49 +1,31 @@
-# Use Alpine as the base image
-FROM alpine:3.22
+# You can change the base image to any other image you want.
+FROM ubuntu-latest
 
-# Set the PRoot version
-ENV PROOT_VERSION=5.4.0
+ARG AUTH_TOKEN
+ARG SSH_PASSWORD=rootuser
 
-# Set locale
-ENV LANG=en_US.UTF-8
+# Install packages and set locale
+RUN apt-get update \
+    && apt-get install -y locales nano ssh sudo python3 curl wget \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install necessary packages
-RUN apk update && \
-    apk add --no-cache \
-        bash \
-        curl \
-        ca-certificates \
-        iproute2 \
-        xz \
-        shadow
+# Configure SSH tunnel using ngrok
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=en_US.utf8
 
-# Install PRoot
-RUN ARCH=$(uname -m) && \
-    mkdir -p /usr/local/bin && \
-    proot_url="https://github.com/ysdragon/proot-static/releases/download/v${PROOT_VERSION}/proot-${ARCH}-static" && \
-    curl -Ls "$proot_url" -o /usr/local/bin/proot && \
-    chmod 755 /usr/local/bin/proot
+RUN wget -O ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip \
+    && unzip ngrok.zip \
+    && rm /ngrok.zip \
+    && mkdir /run/sshd \
+    && echo "/ngrok tcp --authtoken ${AUTH_TOKEN} 22 &" >>/docker.sh \
+    && echo "sleep 5" >> /linux-ssh.sh \
+    && echo "curl -s http://localhost:4040/api/tunnels | python3 -c \"import sys, json; print(\\\"SSH Info:\\\n\\\",\\\"ssh\\\",\\\"root@\\\"+json.load(sys.stdin)['tunnels'][0]['public_url'][6:].replace(':', ' -p '),\\\"\\\nROOT Password:${PASSWORD}\\\")\" || echo \"\nError：AUTH_TOKEN，Reset ngrok token & try\n\"" >> /docker.sh \
+    && echo '/usr/sbin/sshd -D' >>/docker.sh \
+    && echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config \
+    && echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config \
+    && echo root:${PASSWORD}|chpasswd \
+    && chmod 755 /linux-ssh.sh
 
-# Create a non-root user
-RUN adduser -D -h /home/container -s /bin/sh container
-
-# Switch to the new user
-USER container
-ENV USER=container
-ENV HOME=/home/container
-
-# Set the working directory
-WORKDIR /home/container
-
-# Copy scripts into the container
-COPY --chown=container:container ./scripts/entrypoint.sh /entrypoint.sh
-COPY --chown=container:container ./scripts/install.sh /install.sh
-COPY --chown=container:container ./scripts/helper.sh /helper.sh
-COPY --chown=container:container ./scripts/run.sh /run.sh
-COPY --chown=container:container ./scripts/common.sh /common.sh
-
-# Make the copied scripts executable
-RUN chmod +x /entrypoint.sh /install.sh /helper.sh /run.sh /common.sh
-
-# Set the default command
-CMD ["/bin/sh", "/entrypoint.sh"]
+EXPOSE 80 8888 8080 443 5130-5135 3306 7860
+CMD ["/bin/bash", "/linux-ssh.sh"]
